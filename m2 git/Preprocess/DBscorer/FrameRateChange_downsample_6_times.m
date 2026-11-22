@@ -1,6 +1,6 @@
 bin_ar_20hz = reshape(R_ar,6,[]);
 Area_Change_20hz = mean(bin_ar_20hz,1);
-% CSDS5797 post environmental affection set frames from 401 to 469 as 0;
+% mouse 007 post environmental affection set frames from 401 to 469 as 0;
 % Area_Change_20hz(401:469) = 0;
 
 r        = 7;

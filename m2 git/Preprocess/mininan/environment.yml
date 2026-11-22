@@ -219,4 +219,4 @@ dependencies:
       - widgetsnbextension==3.6.1
       - xarray==0.17.0
       - zarr==2.16.1
-prefix: \miniconda3\envs\minian
+prefix: path to your prefix fold # Conda environment installation folder.

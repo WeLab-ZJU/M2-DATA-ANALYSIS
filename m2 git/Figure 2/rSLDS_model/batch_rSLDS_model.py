@@ -1,11 +1,3 @@
-###############
-# To capture the manifold of neuronal activity in a low-dimensional space, we employed the recurrent switching linear dynamical systems (rSLDS) [1]. Code used to fit rSLDS is from the GitHub (https://github.com/lindermanlab/ssm). Firstly, we constructed a neural signal matrix which had dimensions m × n, where m represents the number of time points and n denotes the number of neurons. Then we excluded the first two minutes of the calcium signal to eliminate signal interference caused by the suspension device at the start of the experiment [2]. The key model parameters were configured as follows: the number of neural states K = 2, corresponding to the behavioral states of struggle and immobility; and the dimensionality of the continuous state D = 2 [3].
-
-
-# [1] Nair A, Karigo T, Yang B, et al. An approximate line attractor in the hypothalamus encodes an aggressive state. Cell. 2023;186(1):178-193.e15. doi:10.1016/j.cell.2022.11.027
-# [2] Nandi A, Virmani G, Barve A, Marathe S. DBscorer: An Open-Source Software for Automated Accurate Analysis of Rodent Behavior in Forced Swim Test and Tail Suspension Test. eNeuro. 2021;8(6):ENEURO.0305-21.2021. Published 2021 Nov 4. doi:10.1523/ENEURO.0305-21.2021
-# [3] Bush NE, Ramirez JM. Latent neural population dynamics underlying breathing, opioid-induced respiratory depression and gasping. Nat Neurosci. 2024;27(2):259-271. doi:10.1038/s41593-023-01520-3
-###############
 import os
 import pickle
 import copy
@@ -30,9 +22,6 @@ import pandas as pd
 
 import ssm
 from ssm.util import random_rotation, find_permutation
-
-
-
 
 
 # Helper functions for plotting results
@@ -150,11 +139,6 @@ def plot_most_likely_dynamics_3d(model, true_states, states_plds,
 
     dxydt_m_norm_ = np.reshape(dxydt_m_norm, X.shape, order='C')
 
-    # ax.plot_surface(X, Y, dxydt_m_norm_, cmap=cm.coolwarm)
-    # ax.contour(X, Y, dxydt_m_norm_,zdir='z',offset=-1,cmap=cm.coolwarm)
-    # ax.contour(X, Y, dxydt_m_norm_,inline=False, fontsize=6)
-    # ax.contour(X, Y, dxydt_m_norm_,inline=False,offset=-1,fontsize=10)
-
     for i in range(len(true_states)):
         if true_states[i] == 1:
             plt.plot(states_plds[i:i + 2, 0], states_plds[i:i + 2, 1], dxydt_m_norm_true[i:i + 2], '-k', lw=1, alpha=1,
@@ -169,7 +153,6 @@ def plot_most_likely_dynamics_3d(model, true_states, states_plds,
     ax.set_ylabel('$x_2$')
     ax.set_zlabel('$ dynamic velocity$')
 
-    # ax.view_init(elev=60, azim=-135)
     ax.view_init(elev=elev, azim=azim)
 
     plt.tight_layout()
@@ -178,9 +161,9 @@ def plot_most_likely_dynamics_3d(model, true_states, states_plds,
 
 def fit_rslds(data,label,path):
     # Global parameters
-    T = data.shape[0]  # 帧数
+    T = data.shape[0]  #  frame
     K = 2
-    D_obs = data.shape[1]  # 细胞数
+    D_obs = data.shape[1]  # cell num
     D_latent = 2
 
     print(data.shape)
@@ -201,7 +184,6 @@ def fit_rslds(data,label,path):
                                    initialize=False, num_iters=1000, alpha=0.0)  # default iters= 100
 
     xhat_lem = q_lem.mean_continuous_states[0]
-    # rslds.permute(find_permutation(z, rslds.most_likely_states(xhat_lem, y)))
     zhat_lem = rslds.most_likely_states(xhat_lem, data)
 
 
@@ -219,7 +201,7 @@ def fit_rslds(data,label,path):
     plt.ylabel("ELBO")
     plt.savefig(path+"ELBO.pdf")
 
-    #可视化
+    #visualization
     plt.figure(figsize=[10,4])
     ax= plt.subplot(133)
     plot_trajectory(zhat_lem, xhat_lem, ax=ax)
@@ -260,18 +242,18 @@ def fit_rslds(data,label,path):
     proportion_sum[1][1] = np.sum(observation_label[index_state_1] == 1) / len(index_state_1[0])
     pd.DataFrame(proportion_sum).to_csv(file_path + "Proportion_of_state.csv")
 
-    # 子图1，显示默认属性情况，为与子图2对比，添加了外标签
+    # subplot1
     plt.figure(figsize=(6, 6))
     plt.subplot(121)
     plt.pie(proportion_sum[0], autopct='%1.1f%%')
     plt.title('State1')
-    # 子图2，演示外标签相关属性
+    #  subplot2
     plt.subplot(122)
     plt.pie(proportion_sum[1], autopct='%1.1f%%')
     plt.title('State2')
     plt.savefig(path + "State_pie_plot.pdf")
 
-    #plot动力学场
+    #plot dynamics field
     plt.figure(figsize=(6, 6))
     ax = plt.subplot(111)
     plot_most_likely_dynamics_3d(rslds_lem, zhat_lem, xhat_lem,elev=60,azim=30)
@@ -294,26 +276,26 @@ def fit_rslds(data,label,path):
     tau1_sum=[]
     tau2_sum =[]
     for i in range(K):
-        # 定义动力学矩阵 W
+        # W
         W = rslds_lem.dynamics.As[i]
-        # 计算系统的特征值
+        # eigvalue
         eigenvalues = np.linalg.eigvals(W)
 
-        # 计算时间常数
+        # time constants
         time_constants = 1.0 / np.abs(np.log10(np.abs(eigenvalues)))
-        # 排序时间常数
+        # sort
         sorted_time_constants = np.sort(time_constants)[::-1]
-        print("时间常数:", sorted_time_constants)
+        print("Time constants:", sorted_time_constants)
 
-        # 计算吸引子分数
+        # line attractor score
         first_tau = sorted_time_constants[0]
         second_tau = sorted_time_constants[1]
         attractor_scores = np.log2(first_tau / second_tau)
-        print("吸引子分数:", attractor_scores)
+        print("line attractor score:", attractor_scores)
         tau1_sum.append(first_tau)
         tau2_sum.append(second_tau)
 
-        # 可视化时间常数和吸引子分数
+        # visualization
         plt.figure(figsize=(12, 6))
         plt.subplot(1, 2, 1)
         plt.bar(range(len(sorted_time_constants)), sorted_time_constants, color='blue')
@@ -326,23 +308,8 @@ def fit_rslds(data,label,path):
         attractor_scores_sum.append(attractor_scores)
     tau_sum = [tau1_sum, tau2_sum]
 
-    # 得到两个状态下的能量值
-    energy1_sum=[]
-    energy2_sum = []
-    ax,z,m_norm = plot_most_likely_dynamics_3d(rslds_lem, zhat_lem, xhat_lem, xlim=(min(xhat_lem[:, 0]) -5, max(xhat_lem[:, 0])+5),
-                                     ylim=(min(xhat_lem[:, 1])-5, max(xhat_lem[:, 1])+5),elev=60,azim=300)
-    plt.title("Inferred Dynamics, Laplace-EM")
 
-    attractor_1_energy = min(m_norm[z==0])
-    attractor_2_energy = min(m_norm[z==1])
-
-    print("吸引子1 最低能量:",attractor_1_energy,"吸引子2 最低能量:",attractor_2_energy)
-    print("最低能量差值:",attractor_2_energy-attractor_1_energy)
-    energy1_sum=attractor_1_energy
-    energy2_sum=attractor_2_energy
-    energy_sum = [energy1_sum,energy2_sum]
-
-    return (tau_sum,attractor_scores_sum,energy_sum)
+    return (tau_sum,attractor_scores_sum)
 
 
 
@@ -355,7 +322,6 @@ if __name__ == "__main__":
 
     CAM_tau=[]
     CAM_attractor_scores=[]
-    CAM_energy=[]
     for i in CAM:
         print(i)
         file_path =  [] # project file pathway
@@ -367,18 +333,17 @@ if __name__ == "__main__":
         data = np.array(data)
         data = data.T
 
-        (tau_sum,attractor_scores_sum,energy_sum) = fit_rslds(data,label,file_path)
+        (tau_sum,attractor_scores_sum) = fit_rslds(data,label,file_path)
         CAM_tau.append(tau_sum)
         CAM_attractor_scores.append(attractor_scores_sum)
-        CAM_energy.append(energy_sum)
+
 
     pd.DataFrame(CAM_tau).to_csv(file_path+"CAM_tau.csv")
     pd.DataFrame(CAM_attractor_scores).to_csv(file_path + "CAM_attractor_scores.csv")
-    pd.DataFrame(CAM_energy).to_csv(file_path + "CAM_energy.csv")
+
 
     PV_tau=[]
     PV_attractor_scores=[]
-    PV_energy=[]
     for i in PV:
         print(i)
         file_path =  [] # project file pathway
@@ -390,18 +355,16 @@ if __name__ == "__main__":
         data = np.array(data)
         data = data.T
 
-        (tau_sum,attractor_scores_sum,energy_sum) = fit_rslds(data,label,file_path)
+        (tau_sum,attractor_scores_sum) = fit_rslds(data,label,file_path)
         PV_tau.append(tau_sum)
         PV_attractor_scores.append(attractor_scores_sum)
-        PV_energy.append(energy_sum)
 
     pd.DataFrame(PV_tau).to_csv(file_path+"PV_tau.csv")
     pd.DataFrame(PV_attractor_scores).to_csv(file_path + "PV_attractor_scores.csv")
-    pd.DataFrame(PV_energy).to_csv(file_path + "PV_energy.csv")
+
 
     SST_tau=[]
     SST_attractor_scores=[]
-    SST_energy=[]
     for i in SST:
         print(i)
         file_path =  [] # project file pathway
@@ -413,18 +376,16 @@ if __name__ == "__main__":
         data = np.array(data)
         data = data.T
 
-        (tau_sum,attractor_scores_sum,energy_sum) = fit_rslds(data,label,file_path)
+        (tau_sum,attractor_scores_sum) = fit_rslds(data,label,file_path)
         SST_tau.append(tau_sum)
         SST_attractor_scores.append(attractor_scores_sum)
-        SST_energy.append(energy_sum)
 
     pd.DataFrame(SST_tau).to_csv(file_path+"SST_tau.csv")
     pd.DataFrame(SST_attractor_scores).to_csv(file_path + "SST_attractor_scores.csv")
-    pd.DataFrame(SST_energy).to_csv(file_path + "SST_energy.csv")
+
 
     VIP_tau=[]
     VIP_attractor_scores=[]
-    VIP_energy=[]
     for i in VIP:
         print(i)
         file_path =  [] # project file pathway
@@ -436,11 +397,10 @@ if __name__ == "__main__":
         data = np.array(data)
         data = data.T
 
-        (tau_sum,attractor_scores_sum,energy_sum) = fit_rslds(data,label,file_path)
+        (tau_sum,attractor_scores_sum) = fit_rslds(data,label,file_path)
         VIP_tau.append(tau_sum)
         VIP_attractor_scores.append(attractor_scores_sum)
-        VIP_energy.append(energy_sum)
+
 
     pd.DataFrame(VIP_tau).to_csv(file_path+"VIP_tau.csv")
     pd.DataFrame(VIP_attractor_scores).to_csv(file_path + "VIP_attractor_scores.csv")
-    pd.DataFrame(VIP_energy).to_csv(file_path + "VIP_energy.csv")
